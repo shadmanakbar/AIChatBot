@@ -14,15 +14,26 @@ import {
   TextField,
   Button,
   Snackbar,
+  alpha,
+  useTheme,
+  Avatar,
+  Tooltip,
+  Divider,
+  Alert,
 } from '@mui/material';
 import {
   Search as SearchIcon,
   Add as AddIcon,
   MoreVert as MoreVertIcon,
+  Edit as EditIcon,
+  Settings as SettingsIcon,
+  Delete as DeleteIcon,
+  Chat as ChatIcon,
 } from '@mui/icons-material';
 import { useState, useEffect } from 'react';
 import ChatArea from '../Chat/ChatArea';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const DRAWER_WIDTH = 280;
 
@@ -37,6 +48,37 @@ export default function Sidebar() {
   const [newAssistantName, setNewAssistantName] = useState('');
   const [errorSnackbarOpen, setErrorSnackbarOpen] = useState(false);
   const navigate = useNavigate();
+  const theme = useTheme();
+  const [errorMessage, setErrorMessage] = useState('Assistant name must be unique!');
+  const getAvatar = (avatar: string | undefined) => {
+    if (avatar) return avatar;
+    const emojis = ['🤖', '🧠', '🔮', '🦾', '👾', '🛸', '🚀', '💫', '⚡️', '🌟'];
+    return emojis[Math.floor(Math.random() * emojis.length)];
+    };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+    opacity: 1,
+    transition: {
+    staggerChildren: 0.05,
+    delayChildren: 0.1
+    }
+    }
+    };
+    
+    const itemVariants = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+    type: "spring",
+    stiffness: 300,
+    damping: 24
+    }
+    }
+    };
 
   // Fetch assistants from the API on component mount
   useEffect(() => {
@@ -187,128 +229,413 @@ export default function Sidebar() {
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <Drawer
-        variant="permanent"
-        sx={{
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: DRAWER_WIDTH,
-            marginLeft: 10,
-          },
-        }}
-      >
-        <Box sx={{ p: 3 }}>
-          <Typography variant="h6" sx={{ mb: 3 }}>PerfAIChat</Typography>
+    <Drawer
+    variant="permanent"
+    sx={{
+    width: DRAWER_WIDTH,
+    flexShrink: 0,
+    '& .MuiDrawer-paper': {
+    width: DRAWER_WIDTH,
+    marginLeft: 10,
+    bgcolor: 'background.paper',
+    backdropFilter: 'blur(10px)',
+    borderRight: '1px solid',
+    borderColor: alpha(theme.palette.divider, 0.1),
+    boxShadow: '0 0 20px rgba(0, 0, 0, 0.05)',
+    },
+    }}
+    >
+    <motion.div
+    initial="hidden"
+    animate="visible"
+    variants={containerVariants}
+    style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
+    {/* Header Section */}
+    <Box sx={{ p: 3 }}>
+    <motion.div variants={itemVariants}>
+    <Typography
+    variant="h6"
+    sx={{
+    mb: 3,
+    fontWeight: 700,
+    background: 'linear-gradient(135deg, `#6366F1`, `#8B5CF6`, `#EC4899`)',
+    backgroundClip: 'text',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    textFillColor: 'transparent',
+    letterSpacing: '0.5px',
+    }}
+    >
+    PerfAIChat
+    `</Typography>`
+    </motion.div>
+    <motion.div variants={itemVariants}>
           <Paper
+            elevation={0}
             sx={{
-              p: '3px 4px',
+              p: '8px 12px',
               display: 'flex',
               alignItems: 'center',
-              bgcolor: 'background.paper',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              bgcolor: alpha(theme.palette.background.default, 0.6),
+              border: '1px solid',
+              borderColor: alpha(theme.palette.divider, 0.1),
+              borderRadius: '12px',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                bgcolor: alpha(theme.palette.background.default, 0.8),
+              },
             }}
           >
             <SearchIcon sx={{ mx: 1, color: 'text.secondary' }} />
             <InputBase
-              sx={{ ml: 1, flex: 1 }}
+              sx={{ 
+                ml: 1, 
+                flex: 1,
+                '& .MuiInputBase-input': {
+                  fontSize: '0.9rem',
+                }
+              }}
               placeholder="Search assistants..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </Paper>
-        </Box>
+        </motion.div>
+      </Box>
 
-        <Box sx={{ p: 2 }}>
+      {/* Assistants Section */}
+      <Box 
+        sx={{ 
+          px: 2, 
+          pb: 2, 
+          flex: 1,
+          overflowY: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: alpha(theme.palette.primary.main, 0.2),
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: alpha(theme.palette.primary.main, 0.4),
+          },
+        }}
+      >
+        <motion.div variants={itemVariants}>
           <Paper
+            elevation={0}
             sx={{
               p: 2,
-              mb: 1,
-              bgcolor: 'background.paper',
-              '&:hover': { bgcolor: 'action.hover' },
+              mb: 2,
+              bgcolor: alpha(theme.palette.primary.main, 0.08),
+              borderRadius: '16px',
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.1),
               cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+              overflow: 'hidden',
+              '&:hover': { 
+                transform: 'translateY(-2px)',
+                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.08)',
+                bgcolor: alpha(theme.palette.primary.main, 0.12),
+              },
+              '&::before': {
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '6px',
+                height: '100%',
+                background: 'linear-gradient(180deg, #6366F1, #EC4899)',
+                borderRadius: '4px',
+              }
             }}
             onClick={() => handleOpenChat('Just Chat')}
           >
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Typography variant="h4">😊</Typography>
-              <Typography variant="subtitle2">Just Chat</Typography>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', pl: 1 }}>
+              <Avatar
+                sx={{
+                  width: 40,
+                  height: 40,
+                  bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  color: theme.palette.primary.main,
+                  fontWeight: 'bold',
+                  fontSize: '1.2rem',
+                }}
+              >
+                😊
+              </Avatar>
+              <Box>
+                <Typography variant="subtitle1" fontWeight={600}>Just Chat</Typography>
+                <Typography variant="caption" color="text.secondary">General purpose assistant</Typography>
+              </Box>
             </Box>
           </Paper>
+        </motion.div>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="subtitle2" color="text.secondary">Assistants</Typography>
-            <IconButton size="small" onClick={handleAddAssistant}>
-              <AddIcon fontSize="small" />
-            </IconButton>
-          </Box>
-         
-          {filteredAssistants.map((assistant) => (
-            <Paper
-              key={assistant.title}
-              sx={{
-                p: 2,
-                mb: 1,
-                bgcolor: 'background.paper',
-                '&:hover': { bgcolor: 'action.hover' },
-                cursor: 'pointer',
+        <motion.div variants={itemVariants}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            mb: 2,
+            px: 1
+          }}>
+            <Typography 
+              variant="subtitle2" 
+              color="text.secondary" 
+              sx={{ 
+                fontWeight: 600,
+                letterSpacing: '0.5px',
+                textTransform: 'uppercase',
+                fontSize: '0.75rem',
               }}
-              onClick={() => handleOpenChat(assistant.title)}
             >
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Typography variant="h4">{assistant.avatar}</Typography>
-                <Box sx={{ flexGrow: 1 }}>
-                  <Typography variant="subtitle2">{assistant.title}</Typography>
+              Assistants
+            </Typography>
+            <Tooltip title="Add Assistant" arrow>
+              <IconButton 
+                size="small" 
+                onClick={handleAddAssistant}
+                sx={{
+                  bgcolor: alpha(theme.palette.primary.main, 0.1),
+                  color: theme.palette.primary.main,
+                  '&:hover': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.2),
+                  },
+                  width: 28,
+                  height: 28,
+                }}
+              >
+                <AddIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </motion.div>
+       
+        <AnimatePresence>
+          {filteredAssistants.map((assistant, index) => (
+            <motion.div 
+              key={assistant.title}
+              variants={itemVariants}
+              custom={index}
+              initial="hidden"
+              animate="visible"
+              exit={{ opacity: 0, y: -10 }}
+              layout
+            >
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  mb: 1.5,
+                  bgcolor: 'background.paper',
+                  borderRadius: '12px',
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.divider, 0.1),
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': { 
+                    bgcolor: alpha(theme.palette.action.hover, 0.8),
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                  },
+                }}
+                onClick={() => handleOpenChat(assistant.title)}
+              >
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <Avatar
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                      fontSize: '1.2rem',
+                    }}
+                  >
+                    {getAvatar(assistant.avatar)}
+                  </Avatar>
+                  <Box sx={{ flexGrow: 1 }}>
+                    <Typography variant="subtitle1" fontWeight={500}>{assistant.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">Custom assistant</Typography>
+                  </Box>
+                  <IconButton 
+                    size="small" 
+                    onClick={(event) => handleOpenMenu(event, assistant.title)}
+                    sx={{
+                      bgcolor: alpha(theme.palette.background.default, 0.6),
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.background.default, 0.9),
+                      },
+                      width: 28,
+                      height: 28,
+                    }}
+                  >
+                    <MoreVertIcon fontSize="small" />
+                  </IconButton>
                 </Box>
-                <IconButton size="small" onClick={(event) => handleOpenMenu(event, assistant.title)}>
-                  <MoreVertIcon />
-                </IconButton>
-              </Box>
-            </Paper>
+              </Paper>
+            </motion.div>
           ))}
+        </AnimatePresence>
 
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleCloseMenu}
-          >
-            <MenuItem onClick={handleRenameAssistant}>Rename</MenuItem>
-            <MenuItem onClick={handleOpenSettings}>Settings</MenuItem>
-            <MenuItem onClick={handleDeleteAssistant}>Delete</MenuItem>
-          </Menu>
-        </Box>
-      </Drawer>
+        {filteredAssistants.length === 0 && searchTerm && (
+          <Box sx={{ 
+            p: 4, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'text.secondary',
+          }}>
+            <SearchIcon sx={{ fontSize: 40, mb: 2, opacity: 0.5 }} />
+            <Typography variant="body2" align="center">
+              No assistants found matching "{searchTerm}"
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    </motion.div>
+  </Drawer>
 
-      {/* Conditionally render ChatArea only if activeChat is not null */}
-      {activeChat && <ChatArea key={chatKey} assistantTitle={activeChat} />}
+  {/* Conditionally render ChatArea only if activeChat is not null */}
+  {activeChat && <ChatArea key={chatKey} assistantTitle={activeChat} />}
 
-      {/* Rename Assistant Dialog */}
-      <Dialog open={renameDialogOpen} onClose={() => setRenameDialogOpen(false)}>
-        <DialogTitle>Rename Assistant</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="New Assistant Name"
-            type="text"
-            fullWidth
-            value={newAssistantName}
-            onChange={(e) => setNewAssistantName(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setRenameDialogOpen(false)} color="primary">Cancel</Button>
-          <Button onClick={handleRenameConfirm} color="primary">Rename</Button>
-        </DialogActions>
-      </Dialog>
+  {/* Assistant Options Menu */}
+  <Menu
+    anchorEl={anchorEl}
+    open={Boolean(anchorEl)}
+    onClose={handleCloseMenu}
+    PaperProps={{
+      sx: {
+        borderRadius: '12px',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+        border: '1px solid',
+        borderColor: alpha(theme.palette.divider, 0.1),
+        minWidth: '180px',
+        overflow: 'visible',
+        mt: 1,
+      }
+    }}
+    transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+    anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+  >
+    <MenuItem onClick={handleRenameAssistant} sx={{ py: 1.5, gap: 1.5 }}>
+      <EditIcon fontSize="small" sx={{ color: theme.palette.primary.main }} />
+      <Typography variant="body2">Rename</Typography>
+    </MenuItem>
+    <MenuItem onClick={handleOpenSettings} sx={{ py: 1.5, gap: 1.5 }}>
+      <SettingsIcon fontSize="small" sx={{ color: theme.palette.primary.main }} />
+      <Typography variant="body2">Settings</Typography>
+    </MenuItem>
+    <Divider sx={{ my: 1 }} />
+    <MenuItem onClick={handleDeleteAssistant} sx={{ py: 1.5, gap: 1.5, color: theme.palette.error.main }}>
+      <DeleteIcon fontSize="small" />
+      <Typography variant="body2">Delete</Typography>
+    </MenuItem>
+  </Menu>
 
-      {/* Snackbar for Error Messages */}
-      <Snackbar
-        open={errorSnackbarOpen}
-        autoHideDuration={3000}
-        onClose={() => setErrorSnackbarOpen(false)}
-        message="Assistant name must be unique!"
+  {/* Rename Assistant Dialog */}
+  <Dialog 
+    open={renameDialogOpen} 
+    onClose={() => setRenameDialogOpen(false)}
+    PaperProps={{
+      sx: {
+        borderRadius: '16px',
+        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+        maxWidth: '400px',
+        width: '100%',
+        overflow: 'hidden',
+      }
+    }}
+  >
+    <DialogTitle sx={{ 
+      p: 3, 
+      borderBottom: '1px solid',
+      borderColor: alpha(theme.palette.divider, 0.1),
+    }}>
+      <Typography variant="h6" fontWeight={600}>Rename Assistant</Typography>
+    </DialogTitle>
+    <DialogContent sx={{ p: 3 }}>
+      <TextField
+        autoFocus
+        margin="dense"
+        label="New Assistant Name"
+        type="text"
+        fullWidth
+        value={newAssistantName}
+        onChange={(e) => setNewAssistantName(e.target.value)}
+        variant="outlined"
+        sx={{
+          mt: 1,
+          '& .MuiOutlinedInput-root': {
+            borderRadius: '12px',
+          }
+        }}
       />
-    </Box>
+    </DialogContent>
+    <DialogActions sx={{ 
+      p: 3, 
+      borderTop: '1px solid',
+      borderColor: alpha(theme.palette.divider, 0.1),
+    }}>
+      <Button 
+        onClick={() => setRenameDialogOpen(false)} 
+        variant="outlined"
+        sx={{ 
+          borderRadius: '10px',
+          px: 3,
+          py: 1,
+          mr: 1,
+        }}
+      >
+        Cancel
+      </Button>
+      <Button 
+        onClick={handleRenameConfirm} 
+        variant="contained"
+        sx={{ 
+          borderRadius: '10px',
+          px: 3,
+          py: 1,
+          background: 'linear-gradient(90deg, #6366F1, #EC4899)',
+          boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+          '&:hover': {
+            boxShadow: '0 6px 16px rgba(99, 102, 241, 0.4)',
+          }
+        }}
+      >
+        Rename
+      </Button>
+    </DialogActions>
+  </Dialog>
+
+  {/* Snackbar for Error Messages */}
+  <Snackbar
+    open={errorSnackbarOpen}
+    autoHideDuration={3000}
+    onClose={() => setErrorSnackbarOpen(false)}
+    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+  >
+    <Alert 
+      onClose={() => setErrorSnackbarOpen(false)} 
+      severity="error" 
+      sx={{ 
+        width: '100%', 
+        borderRadius: '10px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      {errorMessage}
+    </Alert>
+  </Snackbar>
+</Box>
   );
 }

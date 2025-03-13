@@ -1,4 +1,19 @@
-import { Box, Typography, Button } from '@mui/material';
+import { Box, 
+  Button, 
+  useTheme, 
+  alpha, 
+  Typography,
+  IconButton,
+  Tooltip,
+  useMediaQuery, } from '@mui/material';
+  import { 
+    Add as AddIcon,
+    Menu as MenuIcon,
+    Close as CloseIcon
+  } from '@mui/icons-material';
+
+  import { motion, AnimatePresence } from 'framer-motion';
+
 import ChatHeader from './ChatHeader';
 import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
@@ -29,10 +44,53 @@ export default function ChatArea({ assistantTitle }: { assistantTitle: string })
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]); // Initialize as an empty array
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+    };
+  const theme = useTheme();
+const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+const sidebarVariants = {
+  open: {
+  width: 250,
+  opacity: 1,
+  transition: {
+  type: "spring",
+  stiffness: 300,
+  damping: 30
+  }
+  },
+  closed: {
+  width: 0,
+  opacity: 0,
+  transition: {
+  type: "spring",
+  stiffness: 300,
+  damping: 30
+  }
+  }
+  };
+  
+  const contentVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+  opacity: 1,
+  transition: {
+  duration: 0.3,
+  ease: "easeInOut"
+  }
+  }
+  };
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  useEffect(() => {
+    if (isMobile) {
+    setSidebarOpen(false);
+    } else {
+    setSidebarOpen(true);
+    }
+    }, [isMobile]);
 
   useEffect(() => {
     scrollToBottom();
@@ -292,33 +350,156 @@ export default function ChatArea({ assistantTitle }: { assistantTitle: string })
   };
 
   return (
-    <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-      {/* Chat History Sidebar */}
-      <Box sx={{ width: 250, bgcolor: 'background.paper', p: 2 }}>
-        <Button
-          variant="contained"
-          fullWidth
-          onClick={startNewChat}
-          sx={{ mb: 2 }}
-        >
-          New Chat
-        </Button>
-        <ChatHistorySidebar
-          chatHistory={chatHistory}
-          onSelectChat={handleSelectChat}
-          onDeleteChat={handleDeleteChat} // Pass the delete function
-        />
-      </Box>
-
-      {/* Main Chat Area */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <ChatHeader title={selectedChatId ? 'Chat' : 'New Chat'} />
-        <Box sx={{ flex: 1, overflow: 'auto', py: 2, display: 'flex', flexDirection: 'column' }}>
-          <ChatMessages messages={messages} />
-          <div ref={messagesEndRef} />
+    <Box
+sx={{
+height: '100vh',
+display: 'flex',
+flexDirection: 'row',
+overflow: 'hidden',
+bgcolor: 'background.default',
+position: 'relative',
+}}
+>
+{/* Mobile Toggle Button */}
+{isMobile && (
+<Box sx={{
+position: 'absolute',
+top: 12,
+left: 12,
+zIndex: 1100
+}}>
+<IconButton
+onClick={toggleSidebar}
+sx={{
+bgcolor: alpha(theme.palette.background.paper, 0.8),
+backdropFilter: 'blur(8px)',
+boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+'&:hover': {
+bgcolor: alpha(theme.palette.background.paper, 0.9),
+}
+}}
+>
+{sidebarOpen ? <CloseIcon /> : <MenuIcon />}
+</IconButton>
+</Box>
+)}
+  {/* Chat History Sidebar */}
+  <AnimatePresence>
+    {sidebarOpen && (
+      <motion.div
+        variants={sidebarVariants}
+        initial="closed"
+        animate="open"
+        exit="closed"
+        style={{
+          overflow: 'hidden',
+          backgroundColor: theme.palette.background.paper,
+          boxShadow: '0 0 20px rgba(0, 0, 0, 0.05)',
+          zIndex: isMobile ? 1000 : 1,
+          position: isMobile ? 'absolute' : 'relative',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <Box sx={{ 
+          width: 250, 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column'
+        }}>
+          <Box sx={{ p: 2.5 }}>
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+            >
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={startNewChat}
+                startIcon={<AddIcon />}
+                sx={{ 
+                  mb: 2.5,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  py: 1.2,
+                  fontWeight: 600,
+                  boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)',
+                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                  '&:hover': {
+                    boxShadow: '0 6px 15px rgba(0, 0, 0, 0.15)',
+                    background: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})`,
+                  }
+                }}
+              >
+                New Chat
+              </Button>
+            </motion.div>
+          </Box>
+          <Box sx={{ flex: 1, overflowY: 'auto' }}>
+            <ChatHistorySidebar
+              chatHistory={chatHistory}
+              onSelectChat={handleSelectChat}
+              onDeleteChat={handleDeleteChat}
+            />
+          </Box>
         </Box>
-        <ChatInput onSendMessage={handleSendMessage} />
-      </Box>
+      </motion.div>
+    )}
+  </AnimatePresence>
+
+  {/* Main Chat Area */}
+  <motion.div
+    variants={contentVariants}
+    initial="hidden"
+    animate="visible"
+    style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      marginLeft: isMobile ? 0 : (sidebarOpen ? 0 : 0),
+      transition: 'margin-left 0.3s ease',
+      height: '100%',
+    }}
+  >
+    <ChatHeader 
+      title={selectedChatId ? 'Chat' : 'New Chat'} 
+      onMenuClick={toggleSidebar}
+      showMenuButton={isMobile}
+    />
+    <Box 
+      sx={{ 
+        flex: 1, 
+        overflow: 'auto', 
+        py: 2, 
+        display: 'flex', 
+        flexDirection: 'column',
+        bgcolor: alpha(theme.palette.background.default, 0.6),
+        backdropFilter: 'blur(8px)',
+        px: { xs: 1, sm: 2, md: 4 },
+        '&::-webkit-scrollbar': {
+          width: '6px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: 'transparent',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: alpha(theme.palette.primary.main, 0.2),
+          borderRadius: '4px',
+        },
+        '&::-webkit-scrollbar-thumb:hover': {
+          background: alpha(theme.palette.primary.main, 0.4),
+        },
+      }}
+    >
+      <ChatMessages messages={messages} />
+      <div ref={messagesEndRef} />
     </Box>
+    <ChatInput onSendMessage={handleSendMessage} assistantTitle={assistantTitle} />
+  </motion.div>
+</Box>
+
   );
 }
