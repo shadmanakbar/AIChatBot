@@ -13,6 +13,11 @@ import {
 } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Psychology as BrainIcon } from '@mui/icons-material';
+import { useEffect } from 'react';
+
+// Create a global variable to store the current model
+// This will be accessible from anywhere in the application
+window.currentModelId = 'gpt-4';
 
 interface Model {
   id: string;
@@ -56,6 +61,35 @@ export default function ModelSelector({
   selectedModel,
   onModelChange,
 }: ModelSelectorProps) {
+  // Log when props change
+  useEffect(() => {
+    if (open) {
+      console.log("🔴 ModelSelector opened with selectedModel:", selectedModel);
+      console.log("🔴 Current global model:", window.currentModelId);
+    }
+  }, [open, selectedModel]);
+
+  const handleModelSelect = (modelId: string) => {
+    console.log("🔴 Model selected in ModelSelector:", modelId);
+    
+    // Update the global variable
+    window.currentModelId = modelId;
+    console.log("🔴 Updated global model to:", window.currentModelId);
+    
+    // Call the parent's onModelChange function
+    onModelChange(modelId);
+    
+    // Also update localStorage
+    localStorage.setItem('selectedModel', modelId);
+    console.log("🔴 Saved to localStorage:", modelId);
+    
+    // Alert for debugging
+    alert(`Model selected in ModelSelector: ${modelId}`);
+    
+    // Close the dialog
+    onClose();
+  };
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
@@ -72,10 +106,7 @@ export default function ModelSelector({
             <ListItem
               key={model.id}
               button
-              onClick={() => {
-                onModelChange(model.id);
-                onClose();
-              }}
+              onClick={() => handleModelSelect(model.id)}
             >
               <ListItemIcon>
                 <Radio checked={selectedModel === model.id} />

@@ -19,6 +19,7 @@ import ChatMessages from './ChatMessages';
 import ChatInput from './ChatInput';
 import ChatHistorySidebar from './ChatHistorySidebar';
 import { useState, useRef, useEffect } from 'react';
+import ModelSelector from './ModelSelector';
 
 interface Message {
   id: string;
@@ -32,6 +33,10 @@ interface ChatHistory {
   title: string;
   timestamp: Date;
 }
+
+// Create a global variable to store the current model
+// This is outside React's state management system
+let currentModelId = 'gpt-4';
 
 export default function ChatArea({ assistantTitle }: { assistantTitle: string }) {
   const [messages, setMessages] = useState<Message[]>([{
@@ -96,102 +101,87 @@ const sidebarVariants = {
     scrollToBottom();
   }, [messages]);
 
- 
+  // Initialize selectedModel from localStorage or default to 'gpt-4'
+  const [selectedModel, setSelectedModel] = useState<string>('gpt-4');
+  const [isModelSelectorOpen, setModelSelectorOpen] = useState(false);
+  
+  // Function to update both the state and the global variable
+  const selectModel = (modelId: string) => {
+    console.log("🔴 Model directly selected:", modelId);
+    
+    // Update the global variable first
+    currentModelId = modelId;
+    console.log("🔴 Updated currentModelId to:", currentModelId);
+    
+    // Then update the state
+    setSelectedModel(modelId);
+    
+    // Also update localStorage as a backup
+    localStorage.setItem('selectedModel', modelId);
+    console.log("🔴 Saved to localStorage:", modelId);
+    
+    // Close the model selector
+    setModelSelectorOpen(false);
+    
+    // Alert for debugging
+    alert(`Model selected: ${modelId}`);
+  };
+
+  const openModelSelector = () => {
+    setModelSelectorOpen(true);
+  };
 
   const handleSendMessage = async (text: string) => {
-    // If no chat history exists, create one
-    if (!selectedChatId) {
-      try {
-        const response = await fetch('http://localhost:8080/create-history', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ assistantTitle }),
-        });
-  
-        if (!response.ok) {
-          throw new Error('Failed to create chat history');
-        }
-  
-        const data = await response.json();
-        const createdChat = data.chatHistory; // Assuming the API returns the new chat history entry
-  
-        if (createdChat) {
-          setSelectedChatId(createdChat.id);
-          // Fetch the updated chat history list after creating a new chat
-          await fetchChatHistory();
-        }
-      } catch (error) {
-        console.error('Error creating chat history:', error);
-        return; // Exit if chat history creation fails
-      }
-    }
-  
-    // Add user message
-    const userMessage: Message = {
+    // Use the global variable from window
+    const modelToUse = window.currentModelId || 'gpt-4';
+    console.log("🔴 About to send message with model (window global):", modelToUse);
+    console.log("🔴 Current state selectedModel:", selectedModel);
+    console.log("🔴 Current localStorage model:", localStorage.getItem('selectedModel'));
+    
+    // Alert for debugging
+    alert(`Sending with model: ${modelToUse}`);
+    
+    const userMessage = {
       id: Date.now().toString(),
       text,
       sender: 'user',
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, userMessage]);
-  
-    // Prepare the context for the API
+
     const context = messages.map(msg => `${msg.sender}: ${msg.text}`).join('\n') + `\nuser: ${text}`;
-  
+
     try {
-      // Send the context to the API
+      const payload = {
+        context,
+        modelId: modelToUse // Use the window global variable
+      };
+      
+      console.log("🔴 API Request Payload:", JSON.stringify(payload, null, 2));
+
       const response = await fetch('http://localhost:8080/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ context }),
+        body: JSON.stringify(payload),
       });
-  
+
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
-  
+
       const data = await response.json();
-      const botMessage: Message = {
+      const botMessage = {
         id: (Date.now() + 1).toString(),
-        text: data.response, // Assuming the API returns a field called 'response'
+        text: data.response,
         sender: 'bot',
         timestamp: new Date(),
       };
-  
-      // Add bot response
+
       setMessages(prev => [...prev, botMessage]);
-  
-      // Update the chat context in the created history
-      if (selectedChatId) {
-        const updateResponse = await fetch(`http://localhost:8080/update-chat-context/${selectedChatId}`, {
-          method: 'PUT', // Use PUT method
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            assistantTitle, // Include assistantTitle in the request body
-            context: `${context}\nbot: ${data.response}`, // Include the updated context
-          }),
-        });
-  
-        if (!updateResponse.ok) {
-          throw new Error('Failed to update chat context');
-        }
-      }
     } catch (error) {
       console.error('Error:', error);
-      // Optionally, handle error response
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        text: 'Sorry, there was an error processing your request.',
-        sender: 'bot',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
     }
   };
 
@@ -312,7 +302,6 @@ const sidebarVariants = {
       const data = await response.json();
       const createdChat = data.chatHistory; // Assuming the API returns the new chat history entry
   
-     
         setMessages([]);
         setSelectedChatId(createdChat.id);
   
@@ -497,8 +486,22 @@ bgcolor: alpha(theme.palette.background.paper, 0.9),
       <ChatMessages messages={messages} />
       <div ref={messagesEndRef} />
     </Box>
-    <ChatInput onSendMessage={handleSendMessage} assistantTitle={assistantTitle} />
+    <ChatInput 
+      onSendMessage={handleSendMessage} 
+      assistantTitle={assistantTitle} 
+      selectedModel={selectedModel}
+      onModelChange={selectModel}
+      onOpenModelSelector={openModelSelector}
+    />
   </motion.div>
+
+  {/* Model Selector Dialog */}
+  <ModelSelector
+    open={isModelSelectorOpen}
+    onClose={() => setModelSelectorOpen(false)}
+    selectedModel={selectedModel}
+    onModelChange={selectModel}
+  />
 </Box>
 
   );
